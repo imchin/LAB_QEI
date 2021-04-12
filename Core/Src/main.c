@@ -1,4 +1,3 @@
-
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
@@ -61,6 +60,19 @@ uint32_t diffen=0;
 
 double q=0;
 uint64_t timestamp=0;
+
+void Pseudocode();
+double err=0;
+#define setrpm 15
+double proportional=0;
+double preerr=0;
+double integral=0;
+double derivative=0;
+double output=0;
+double Kp=42.2;
+double Ki =26.6;
+double Kd =1;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -92,8 +104,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-
-	HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -115,7 +126,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 5000);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 500);
   HAL_TIM_Base_Start(&htim5);
 
   /* USER CODE END 2 */
@@ -128,6 +139,9 @@ int main(void)
 	if(micros()-timestamp >=100000){
 		timestamp=micros();
 		getrpm();
+		Pseudocode();
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, output );
+
 	}
     /* USER CODE END WHILE */
 
@@ -275,7 +289,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 9999;
+  sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
@@ -423,6 +437,17 @@ void getrpm(){
 	enpre=ennow;
 	tpre=tnow;
 }
+
+void Pseudocode(){
+	err=setrpm-q;
+	proportional = err;
+	integral = integral + (err*difftime/1000000);
+	derivative=(err-preerr)/difftime/1000000;
+	output=(Kp*proportional)+(Ki*integral)+(Kd*derivative);
+	preerr = err;
+
+}
+
 /* USER CODE END 4 */
 
 /**
