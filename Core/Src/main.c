@@ -49,6 +49,9 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 uint64_t micros();
 uint64_t _micros=0;
+
+uint64_t encode();
+uint64_t _encode=0;
 void getrpm();
 double w=0;
 uint32_t ennow = 0;
@@ -58,7 +61,7 @@ uint64_t tpre = 0;
 uint64_t difftime=0;
 uint32_t diffen=0;
 
-double q=0;
+double q[10]={0};
 uint64_t timestamp=0;
 
 void Pseudocode();
@@ -69,9 +72,11 @@ double preerr=0;
 double integral=0;
 double derivative=0;
 double output=0;
-double Kp=42.2;
-double Ki =26.6;
-double Kd =1;
+double Kp=60;
+double Ki =120;
+double Kd =100;
+uint8_t i=0;
+double rpm=0;
 
 /* USER CODE END PV */
 
@@ -141,7 +146,11 @@ int main(void)
 		getrpm();
 		Pseudocode();
 		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, output );
-
+		if(i<9){
+			i=i+1;
+		}else{
+			i=0;
+		}
 	}
     /* USER CODE END WHILE */
 
@@ -416,30 +425,34 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
-	if (htim == &htim5)
-	{
+	if (htim == &htim5){
 		_micros += 4294967295;
 	}
+
+
+
 }
 
 uint64_t micros(){
 	return _micros + htim5.Instance->CNT;
 }
 
+
 void getrpm(){
-	ennow=htim1.Instance->CNT+1;
+
+	ennow=htim1.Instance->CNT;
 	tnow=micros();
 	difftime=tnow-tpre;
 	diffen=ennow-enpre;
-	q=diffen*(1000000/difftime)*(60.00/3072.00);
-
+	q[i]= ((q[0]+q[1]+q[2]+q[3]+q[4]+q[5]+q[6]+q[7]+q[8]+q[9]) +(diffen*(1000000/difftime)*(60.00/3072.00)))/11 ;
+	rpm=(q[0]+q[1]+q[2]+q[3]+q[4]+q[5]+q[6]+q[7]+q[8]+q[9])/10;
 
 	enpre=ennow;
 	tpre=tnow;
 }
 
 void Pseudocode(){
-	err=setrpm-q;
+	err=setrpm-rpm;
 	proportional = err;
 	integral = integral + (err*difftime/1000000);
 	derivative=(err-preerr)/difftime/1000000;
