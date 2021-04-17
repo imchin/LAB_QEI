@@ -48,18 +48,20 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint64_t micros();
+
 uint64_t _micros=0;
+
 
 uint64_t encode();
 uint64_t _encode=0;
 void getrpm();
 double w=0;
-uint32_t ennow = 0;
-uint32_t enpre = 0;
+uint64_t ennow = 0;
+uint64_t enpre = 0;
 uint64_t tnow = 0;
 uint64_t tpre = 0;
 uint64_t difftime=0;
-uint32_t diffen=0;
+int64_t diffen=0;
 
 double q[10]={0};
 uint64_t timestamp=0;
@@ -131,8 +133,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 500);
-  HAL_TIM_Base_Start(&htim5);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 2000);
+  HAL_TIM_Base_Start_IT(&htim5);
 
   /* USER CODE END 2 */
 
@@ -141,11 +143,11 @@ int main(void)
   while (1)
   {
 
-	if(micros()-timestamp >=100000){
+	if(micros()-timestamp >=10000){
 		timestamp=micros();
 		getrpm();
 		Pseudocode();
-		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, output );
+		htim3.Instance->CCR1=output;
 		if(i<9){
 			i=i+1;
 		}else{
@@ -425,8 +427,13 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
+	static w=0;
 	if (htim == &htim5){
 		_micros += 4294967295;
+		if(w==0){
+			w=w+1;
+			_micros =0;
+		}
 	}
 
 
@@ -444,11 +451,19 @@ void getrpm(){
 	tnow=micros();
 	difftime=tnow-tpre;
 	diffen=ennow-enpre;
+	if(diffen>=32767){
+		diffen=diffen-65535;
+	}else if(-diffen>=32767){
+		diffen=diffen+65535;
+	}
 	q[i]= ((q[0]+q[1]+q[2]+q[3]+q[4]+q[5]+q[6]+q[7]+q[8]+q[9]) +(diffen*(1000000/difftime)*(60.00/3072.00)))/11 ;
 	rpm=(q[0]+q[1]+q[2]+q[3]+q[4]+q[5]+q[6]+q[7]+q[8]+q[9])/10;
 
 	enpre=ennow;
 	tpre=tnow;
+
+
+
 }
 
 void Pseudocode(){
