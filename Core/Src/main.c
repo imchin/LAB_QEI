@@ -68,17 +68,19 @@ uint64_t timestamp=0;
 
 void Pseudocode();
 double err=0;
-#define setrpm 15
+double setrpm=15;
 double proportional=0;
 double preerr=0;
 double integral=0;
 double derivative=0;
-double output=0;
-double Kp=60;
-double Ki =120;
+double output=1000;
+double Kp=160;
+double Ki =80;
 double Kd =100;
 uint8_t i=0;
 double rpm=0;
+double rpmabs=0;
+void direction();
 
 /* USER CODE END PV */
 
@@ -135,24 +137,35 @@ int main(void)
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 2000);
   HAL_TIM_Base_Start_IT(&htim5);
-
+uint64_t timestamp2=0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+//	 if(micros()-timestamp2 >=20000){
+//		 timestamp2=micros();
+//	  	getrpm();
+//	  	if(i<9){
+//	  		i=i+1;
+//	  	}else{
+//	  		i=0;
+//	  	}
+//	}
 
-	if(micros()-timestamp >=10000){
+	if(micros()-timestamp >=20000){
 		timestamp=micros();
+		direction();
 		getrpm();
 		Pseudocode();
-		htim3.Instance->CCR1=output;
+		htim3.Instance->CCR1=(int)output;
 		if(i<9){
-			i=i+1;
-		}else{
-			i=0;
-		}
+		  	i=i+1;
+		 }else{
+		  	i=0;
+		 }
+
 	}
     /* USER CODE END WHILE */
 
@@ -410,6 +423,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_4, GPIO_PIN_RESET);
+
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
@@ -422,6 +438,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB10 PB4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 
@@ -456,8 +479,13 @@ void getrpm(){
 	}else if(-diffen>=32767){
 		diffen=diffen+65535;
 	}
-	q[i]= ((q[0]+q[1]+q[2]+q[3]+q[4]+q[5]+q[6]+q[7]+q[8]+q[9]) +(diffen*(1000000/difftime)*(60.00/3072.00)))/11 ;
+	q[i]= ((q[0]+q[1]+q[2]+q[3]+q[4]+q[5]+q[6]+q[7]+q[8]+q[9]) +(double)(diffen*(1000000/(double)difftime)*(60.00/3072.00)))/11.00 ;
 	rpm=(q[0]+q[1]+q[2]+q[3]+q[4]+q[5]+q[6]+q[7]+q[8]+q[9])/10;
+	if(rpm<0){
+		rpmabs=-1*rpm;
+	}else{
+		rpmabs=rpm;
+	}
 
 	enpre=ennow;
 	tpre=tnow;
@@ -467,12 +495,32 @@ void getrpm(){
 }
 
 void Pseudocode(){
-	err=setrpm-rpm;
+	static double setrpmabs=0;
+	if(setrpm<0){
+		setrpmabs=-1*setrpm;
+	}else{
+		setrpmabs=setrpm;
+	}
+	err=setrpmabs-rpmabs;
 	proportional = err;
 	integral = integral + (err*difftime/1000000);
 	derivative=(err-preerr)/difftime/1000000;
 	output=(Kp*proportional)+(Ki*integral)+(Kd*derivative);
+//	output=output +(Kp*proportional)+(Ki*integral)+(Kd*derivative);
+
+
 	preerr = err;
+
+}
+void direction(){
+	if(setrpm<0){
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, 0);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, 1);
+	}else{
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, 1);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, 0);
+	}
+
 
 }
 
