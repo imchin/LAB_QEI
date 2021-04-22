@@ -1976,11 +1976,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_4;
  80012e2:	f44f 6382 	mov.w	r3, #1040	; 0x410
  80012e6:	617b      	str	r3, [r7, #20]
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
- 80012e8:	2301      	movs	r3, #1
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+ 80012e8:	2311      	movs	r3, #17
  80012ea:	61bb      	str	r3, [r7, #24]
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
- 80012ec:	2300      	movs	r3, #0
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+ 80012ec:	2301      	movs	r3, #1
  80012ee:	61fb      	str	r3, [r7, #28]
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
  80012f0:	2300      	movs	r3, #0
